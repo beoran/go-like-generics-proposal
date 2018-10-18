@@ -1,5 +1,6 @@
 # go-like-generics-proposal
 An alternative Go-like proposal for Go2 generics.
+Based on the ideas of Burak Serdar here: https://groups.google.com/forum/m/#!topic/golang-nuts/eqaDEb9xtGM
 
 # Generic type parameter specification.
 
