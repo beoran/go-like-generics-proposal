@@ -32,11 +32,14 @@ Y, ...
 ```
   type ArrType []int
 ```
+
     can be substituted for
+
 ```
   type T like []int
 ```
-    but not for:
+  but not for:
+
 ```
   type T like []int64
 ```
