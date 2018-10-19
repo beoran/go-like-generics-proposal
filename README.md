@@ -2,16 +2,17 @@
 
 ## Abstract
 
-An alternative Go like proposal for generics in Go2. It is based on the Burak Serdar here: https://groups.google.com/forum/m/#!topic/golang-nuts/eqaDEb9xtGM, and on the official Go2 generics proposal.
+An alternative Go like proposal for generics in Go2. It is based on the suggestions by Burak Serdar here:
+https://groups.google.com/forum/m/#!topic/golang-nuts/eqaDEb9xtGM, and on the official Go2 generics proposal 
+by Ian Lance Taylor and Robert Griesemer.
 
-We suggest extending the Go language to add optional type parameters to types and functions. Type parameters may be constrained by like clauses: they may be used as	ordinary types that only support the operations described by the like clause. Type inference via a unification algorithm is supported to permit omitting type arguments from function calls in many cases. Depending on a detail, the design can be fully backward compatible with Go 1.
-
-
-
+We suggest extending the Go language to add optional type parameters to types and functions. Type parameters may be 
+constrained by like clauses: they may be used as ordinary types that only support the operations described by the like clause. 
+Type inference via a unification algorithm is supported to permit omitting type arguments from function calls in many cases. 
 
 ## Generic type parameter specification.
 
-Generic types can be specified with a like clause . 
+Generic types can be specified with a like clause. 
 A like clause mentions one or more concrete types 
 that the parameterized type must match. 
 The concrete type in like clause can be a primitive type, an interface or a struct type.
@@ -265,7 +266,7 @@ func Stringify(T type, s []T) (ret []string) {
 	 }
 	 return ret
 }
-	```
+```
 	
 This might seem OK at first glance, but in this example, `v` has type `T`, and we don’t know anything about `T`. 
 In particular, we don’t know that `T` has a `String` method. So the call `v.String()` is invalid. 
@@ -301,7 +302,7 @@ These requirements are expressed using like clauses and type templates.
 
 	
 	
-### Like clause syntax
+### Like clause and type template syntax
 		
 In this design, a like clause is a clause added after a type parameter. A type template is a type that defines the capabilities of a generic type. For the `Stringify` example, we need specify that the type the type has a `String` method that takes no arguments and returns a value of type `string`.
 	
@@ -344,7 +345,7 @@ type LinkedList like struct {
 ```
 
 	
-### Using like clauses to verify type arguments
+### Using like clauses and type templates to verify type arguments
 		
 A like clause serves two purposes.
 
@@ -495,14 +496,15 @@ This could be called as, for example,
 	
 For example, this like clause would permit the type arguments `(int64, int32)` but would forbid 
 the type arguments `([]int, complex64)`.
-	
+
+If the concrete type in a like clause is an integer or floating point type or a type that has them as an underlying type, then all operators supported by that type are allowed, unless if they are not supported by the other concrete types mentioned in the like clause.
 
 This isn’t too useful with what we’ve described so far, but it will be a bit more convenient when we get to type inference.
 
 	
 #### Restrictions on like clauses
 
-A like clause may not itself contain generic types, only concrete types or type templates are allowed.
+A like clause may not itself contain unresolved generic types, only concrete types, expanded generic types or non-generic type templates are allowed.
 	
 #### The like keyword
 	
@@ -549,9 +551,9 @@ type SetString like interface {
 }
 	
 	
-func SetViaStrings(type To like SetString, type From like Stringer)(s []From) []To {
+func SetViaStrings(From type like Stringer, To type like SetString, s []From) []To {
   r := make([]To, len(s))
-		for i, v := range s {	
+		for i, v := range s {
 		  r[i].Set(v.String())
 	 } 
   return r
@@ -630,8 +632,8 @@ of the type parameter, not the name of the type argument.
 	
 	
 ```Go
-type Lockable like(type T) struct {
-	T	
+type Lockable like(T type) struct {
+	T
 	mu sync.Mutex
 }
 		
@@ -643,15 +645,11 @@ func (l *Lockable(T)) Get() T {
 ```
 	
 ### Parameterized type aliases
-	
-	
+
 Type aliases may have parameters.
-	
-	
+
 ```Go
-	
-type Ptr like(type Target) = *Target
-	
+type Ptr like(Target type) = *Target
 ```
 	
 Type aliases may refer to parameterized types, in which case any uses	
@@ -660,10 +658,8 @@ provide type arguments.
 	
 	
 ```Go
-	
 type V = Vector	
-var v2 V(int)
-	
+var v2 V(int)	
 ```
 	
 	
@@ -678,25 +674,20 @@ type VectorInt = Vector(int)
 	
 Although methods of a parameterized type may use the type’s parameters, methods may not themselves have (additional) 
 type parameters.
-	
-Where it would be useful to add type arguments to a method, people
-will have to write a top-level function.
-		
-Making this decision avoids having to specify the details of exactly
-when a method with type arguments implements an interface.
+
+Where it would be useful to add type arguments to a method, people will have to write a top-level function.
+
+Making this decision avoids having to specify the details of exactly when a method with type arguments implements an interface.
 	
 (This is a feature that can perhaps be added later if it proves necessary.)
 	
 	
 ### Type template embedding
-	
-	
+		
 A type template may embed another type template, either by adding it as a type listed int he like clause, 
-or, by embedding it in a struct.
+or, by embedding it in a struct type template.
 	
-	
-This type template embeds the type template `stringer` defined earlier.
-	
+This type template embeds the type template `Stringer` defined earlier.
 	
 ```Go
 type Printer like interface {
@@ -707,14 +698,11 @@ type PrintStringer like (Stringer, Printer)
 ```
 	
 	
-### Using types that refer to themselves in contracts
+### Using types that refer to themselves in type templates
 	
-	
-Although this is implied by what has already been discussed, it’s
-	
-worth pointing out explicitly that a contract may require a method to
-	
-have an argument whose type is one of the contract’s type parameters.
+Although this is implied by what has already been discussed, it’s	
+worth pointing out explicitly that a type template may require a method to
+have an argument whose type is one of the type template’s type parameters.
 	
 	
 ```Go
@@ -725,7 +713,7 @@ package comparable
 // The equal type template describes types that have an Equal method for
 // the same type.
 	
-type canEqual like(type T) interface { 
+type canEqual like(type T) interface {
   bool Equal(v T)
 }
 	
@@ -756,7 +744,7 @@ type EqualInt int
 func (a EqualInt) Equal(b EqualInt) bool { return a == b }
 
 func Index(s []EqualInt, e EqualInt) int {
-	return comparable.Index(EqualInt)(s, e)	
+	return comparable.Index(EqualInt)(s, e)
 }
 	
 ```
@@ -793,9 +781,9 @@ like finding the shortest path.
 ```Go
 	
 package graph
-	
-	
-contract G(n Node, e Edge) {
+
+
+type G like(n type Node, e type Edge) interface {
 	
 	var _ []Edge = n.Edges()
 	
@@ -2233,7 +2221,7 @@ points.
 * Type inference can sometimes permit omitting type arguments when
 	
   calling functions with type parameters.
-	
+46	
 	
 This design is completely backward compatible, in that any valid Go 1
 	
