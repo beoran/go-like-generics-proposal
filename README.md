@@ -178,4 +178,3 @@ type T like(X,Y)
 
 func TemplateFunc(input T) {...{
 ```
-
