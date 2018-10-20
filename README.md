@@ -57,33 +57,26 @@ Function template is declared like this:
 ```
 or if T is already defined as a type template:
 ```
-  func F(a,b T) T
+  func F(a,b type T) T
 ```
-An interface template can be defined like this:
-```
-type I interface_template {
-  F(a type T like(int)) T
-}
-```
-A function with an interface template in its signature becomes a template:
-```
-func F(in I)
-```
-Problem: It is not evident from this declaration that F is a template. Maybe we should change this syntax to
-make that explicit.
 
 ## Struct and interface templates
 
 The following syntax defines struct and interface templates:
 
 ```
-type Name like struct {
- ...
+type TemplateStruct like struct {
+ ConcreteField int
+ Field1 type T like(X,Y,...)
+ Field2 type U
 }
 ```
 or
 ```
-type Name like interface {
+type TemplateInterface like interface {
+  Func(int)
+  FuncTemplate1(type T like(X,Y...)
+  FuncTemplate2(type T)
  ...
 }
 ```
@@ -92,6 +85,9 @@ To instantiate a template struct:
 
 ```
 type MyStruct TemplateStruct {
+  ConcreteField int // Template fields must be redeclared with concrete types
+  Field1 X 
+  Field2 UDerivative
    ...
 }
 ```
@@ -173,4 +169,12 @@ type MyGraph graph.Graph {
 }
 
 x:=graph.New(MyGraph)(myNodes)
+```
+
+If a function signature contains a type template, the function itself is a template:
+
+```
+type T like(X,Y)
+
+func TemplateFunc(input T) {...{
 ```
